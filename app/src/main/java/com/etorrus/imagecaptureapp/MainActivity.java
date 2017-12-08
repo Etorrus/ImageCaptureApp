@@ -1,15 +1,62 @@
 package com.etorrus.imagecaptureapp;
 
+import android.graphics.SurfaceTexture;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.TextureView;
 import android.view.View;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
+
+    //Объявлям TextureView
+    private TextureView mTextureView;
+    //Этот прослушиватель может использоваться для уведомления, когда доступна текстура поверхности, связанная с этим видом текстуры.
+    private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
+        //Вызывается, когда поверхность TextureViewSurfaceTexture готова к использованию.
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+            //пока не привязан preview, будет показываться тост
+            Toast.makeText(getApplication(), "TextureView доступен", Toast.LENGTH_SHORT).show();
+        }
+        //Вызывается, когда SurfaceTextureизменяется размер буфера.
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+
+        }
+        //Вызывается, когда указанный объект SurfaceTextureдолжен быть уничтожен.
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+            return false;
+        }
+        //Вызывается, когда указанное SurfaceTextureобновление обновляется updateTexImage().
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //Находим textureView и присваеваем mTextureView
+        mTextureView = (TextureView) findViewById(R.id.textureView);
+    }
+
+    //onResume () вызывается всякий раз, когда вы возвращаетесь к активности из вызова или чего-то еще.
+    //без него прога будет падать если свернуть ее и вернуться обратно
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //если mTextureView не доступна, то сделать ее доступной
+        if(mTextureView.isAvailable()) {
+
+        } else {
+            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        }
     }
 
     /*Пока туплю, но вроде как, этот метод нужен для определения момента получения фокуса
@@ -28,11 +75,11 @@ public class MainActivity extends AppCompatActivity {
                     он имеет эффект только при использовании в сочетании с этим флагом.*/
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     //View хотел бы, чтобы его окно было выложено, как если бы оно было запрошено
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                //| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     //View хотел бы, чтобы его окно было выложено, как если бы оно было запрошено
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     //полноэкранный режим
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                //| View.SYSTEM_UI_FLAG_FULLSCREEN
                     //на устройствах, которые нарисовывают основные элементы навигации (Home, Back и т. п.)
                     // на экране, SYSTEM_UI_FLAG_HIDE_NAVIGATION заставят их исчезнуть
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
