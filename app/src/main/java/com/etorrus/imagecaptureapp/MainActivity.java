@@ -1,6 +1,8 @@
 package com.etorrus.imagecaptureapp;
 
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraDevice;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.TextureView;
@@ -36,6 +38,35 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    //Класс CameraDevice представляет собой единую камеру, подключенную к устройству Android,
+    // позволяющую осуществлять мелкозернистый контроль захвата изображения и последующей
+    // обработки при высоких частотах кадров.
+    private CameraDevice mCameraDevice;
+
+    //Объекты обратного вызова для получения обновлений о состоянии устройства камеры.
+    private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
+
+        //Метод, вызываемый при завершении открытия камеры.
+        @Override
+        public void onOpened(@NonNull CameraDevice camera) {
+            mCameraDevice = camera;
+        }
+
+        //Этот метод называется, когда устройство камеры больше не доступно для использования.
+        @Override
+        public void onDisconnected(@NonNull CameraDevice camera) {
+            camera.close();
+            mCameraDevice = null;
+        }
+
+        //Метод вызван, когда устройство камеры обнаружило серьезную ошибку.
+        @Override
+        public void onError(@NonNull CameraDevice camera, int error) {
+            camera.close();
+            mCameraDevice = null;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,6 +88,16 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
+    }
+
+    // Activity находится в состоянии «Приостановлено» (программа свёрнута)
+    @Override
+    protected void onPause() {
+
+        //Вызываем метод закрытия mCameraDevice, чтоб камерой могли пользоваться другие проги
+        closeCamera();
+
+        super.onPause();
     }
 
     /*Пока туплю, но вроде как, этот метод нужен для определения момента получения фокуса
@@ -83,6 +124,14 @@ public class MainActivity extends AppCompatActivity {
                     //на устройствах, которые нарисовывают основные элементы навигации (Home, Back и т. п.)
                     // на экране, SYSTEM_UI_FLAG_HIDE_NAVIGATION заставят их исчезнуть
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
+    }
+
+    //Метод закрытия mCameraDevice
+    private void closeCamera() {
+        if(mCameraDevice != null) {
+            mCameraDevice.close();
+            mCameraDevice = null;
         }
     }
 }
