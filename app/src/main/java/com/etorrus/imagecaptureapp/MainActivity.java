@@ -1,7 +1,11 @@
 package com.etorrus.imagecaptureapp;
 
+import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -17,7 +21,10 @@ public class MainActivity extends AppCompatActivity {
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         //Вызывается, когда поверхность TextureViewSurfaceTexture готова к использованию.
         @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+
+            //Для setupCamera в качестве аргументов идут высота и широта, ОТКУДА ОНИ БЕРУТСЯ НУЖНО ВЫЯСНИТЬ
+            setupCamera(width, height);
             //пока не привязан preview, будет показываться тост
             Toast.makeText(getApplication(), "TextureView доступен", Toast.LENGTH_SHORT).show();
         }
@@ -67,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private String mCameraId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,7 +93,9 @@ public class MainActivity extends AppCompatActivity {
 
         //если mTextureView не доступна, то сделать ее доступной
         if(mTextureView.isAvailable()) {
-
+            //если mTextureView доступна, то вызываем метод setupCamera и подставляем высоту и
+            //широту такую же как у mTextureView
+            setupCamera(mTextureView.getWidth(), mTextureView.getHeight());
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
@@ -124,6 +135,38 @@ public class MainActivity extends AppCompatActivity {
                     //на устройствах, которые нарисовывают основные элементы навигации (Home, Back и т. п.)
                     // на экране, SYSTEM_UI_FLAG_HIDE_NAVIGATION заставят их исчезнуть
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
+    }
+
+    //Настройки камеры
+    private void setupCamera(int width, int height) {
+
+        //Диспетчер системных служб для обнаружения, характеризации и подключения CameraDevices.
+        //Экземпляры этого класса должны быть получены Context.getSystemService(String)аргумента Context.CAMERA_SERVICE.
+        CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        //один раз получил менеджер камеры камеры и объект менеджера камеры, мы можем получить список
+        // идентификаторов камеры
+        try {
+            for(String cameraId : cameraManager.getCameraIdList()) {
+
+                //Свойства, описывающие  CameraDevice.
+                // Эти свойства фиксируются для данной CameraDevice и могут быть запрошены через CameraManager интерфейс getCameraCharacteristics(String).
+                // CameraCharacteristics объекты неизменяемы.
+                CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+                //Если LENS_FACING_FRONT Устройство камеры находится в том же направлении, что и экран устройства.
+                //то continue, т.к. я хочу использовать заднюю камеру (ТУТ ВОЗМОЖНО Я НАТУПИЛ)
+                if(cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
+                    continue;
+                }
+
+                //cameraId это просто порядковый номер камеры
+                mCameraId = cameraId;
+                return;
+
+            }
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
     }
 
