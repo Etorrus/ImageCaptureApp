@@ -6,6 +6,8 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -74,6 +76,12 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    //Удобный класс для запуска нового потока, в котором есть looper.
+    // Затем looper можно использовать для создания классов обработчиков.
+    // Обратите внимание, что start () еще нужно вызвать.
+    private HandlerThread mBackgroundHandlerThread;
+
+    private Handler mBackgroundHandler;
     private String mCameraId;
 
     @Override
@@ -91,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        //Запускаем поток
+        startBackgroundThread();
+
         //если mTextureView не доступна, то сделать ее доступной
         if(mTextureView.isAvailable()) {
             //если mTextureView доступна, то вызываем метод setupCamera и подставляем высоту и
@@ -107,6 +118,9 @@ public class MainActivity extends AppCompatActivity {
 
         //Вызываем метод закрытия mCameraDevice, чтоб камерой могли пользоваться другие проги
         closeCamera();
+
+        //Останавливаем поток
+        stopBackgroundThread();
 
         super.onPause();
     }
@@ -175,6 +189,32 @@ public class MainActivity extends AppCompatActivity {
         if(mCameraDevice != null) {
             mCameraDevice.close();
             mCameraDevice = null;
+        }
+    }
+
+    //Метод запуска потока
+    private void startBackgroundThread() {
+
+        //Создаем новый поток
+        mBackgroundHandlerThread = new HandlerThread("ImageCaptureApp");
+        //Запускаем его
+        mBackgroundHandlerThread.start();
+        mBackgroundHandler = new Handler(mBackgroundHandlerThread.getLooper());
+    }
+
+
+    //Метод остановки потока
+    private void stopBackgroundThread() {
+        //Безопасно завершает работу looper нити обработчика.
+        mBackgroundHandlerThread.quitSafely();
+        try {
+
+            //УЗНАТЬ ДЛЯ ЧЕГО НУЖЕН
+            mBackgroundHandlerThread.join();
+            mBackgroundHandlerThread = null;
+            mBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }
