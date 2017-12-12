@@ -209,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         mBackgroundHandlerThread.quitSafely();
         try {
 
-            //УЗНАТЬ ДЛЯ ЧЕГО НУЖЕН
+            //УЗНАТЬ ДЛЯ ЧЕГО НУЖЕН о
             mBackgroundHandlerThread.join();
             mBackgroundHandlerThread = null;
             mBackgroundHandler = null;
