@@ -11,8 +11,12 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.Window;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
@@ -83,6 +87,19 @@ public class MainActivity extends AppCompatActivity {
 
     private Handler mBackgroundHandler;
     private String mCameraId;
+
+    //SparseIntArray предназначен для большей эффективности памяти, чем использование HashMap для сопоставления целых чисел с целыми
+    private static SparseIntArray ORIENTATIONS = new SparseIntArray();
+    static {
+        //Постоянная вращения: 0 градусов (естественная ориентация)
+        ORIENTATIONS.append(Surface.ROTATION_0, 0);
+        //Постоянная вращения: 90 градусов
+        ORIENTATIONS.append(Surface.ROTATION_90, 90);
+        //Постоянная вращения: 180 градусов
+        ORIENTATIONS.append(Surface.ROTATION_180, 180);
+        //Постоянная вращения: 270 градусов
+        ORIENTATIONS.append(Surface.ROTATION_270, 270);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -174,6 +191,18 @@ public class MainActivity extends AppCompatActivity {
                     continue;
                 }
 
+                //Присваеваем deviceOrientation - поворот экрана из его «естественной» ориентации.
+                int deviceOrientation = getWindowManager().getDefaultDisplay().getRotation();
+
+                int totalRotation = sensorToDeviceRotation(cameraCharacteristics, deviceOrientation);
+                boolean swapRotation = totalRotation == 90 || totalRotation == 270;
+                int rotatedWidth = width;
+                int rotatedHeight = height;
+                if(swapRotation) {
+                    rotatedWidth = height;
+                    rotatedHeight = width;
+                }
+
                 //cameraId это просто порядковый номер камеры
                 mCameraId = cameraId;
                 return;
@@ -209,12 +238,22 @@ public class MainActivity extends AppCompatActivity {
         mBackgroundHandlerThread.quitSafely();
         try {
 
-            //УЗНАТЬ ДЛЯ ЧЕГО НУЖЕН о
+            //Ожидает, что эта thread умрет, этот метод унаследован от java.lang.Thread
             mBackgroundHandlerThread.join();
             mBackgroundHandlerThread = null;
             mBackgroundHandler = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private static int sensorToDeviceRotation(CameraCharacteristics cameraCharacteristics, int deviceOrientation) {
+        //Угол по часовой стрелке, по которому необходимо поворачивать выходное изображение,
+        // чтобы оно было вертикально на экране устройства в его естественной ориентации.
+        int sensorOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+        //ORIENTATIONS.get(deviceOrientation) возвращает int, deviceOrientation является ключом, или 0 если такое отображение не было сделано.
+        deviceOrientation = ORIENTATIONS.get(deviceOrientation);
+        //Прибавляем 360 для того чтоб не получилось отрицательного числа, но это не точно
+        return (sensorOrientation + deviceOrientation + 360) % 360;
     }
 }
